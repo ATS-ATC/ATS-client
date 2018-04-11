@@ -151,7 +151,7 @@ public class CaseMonitorThread implements Runnable{
 		messagePre = ParamUtil.getJsonObject(Constants.CASESTATUSPRE, "", "", Fiforeader.readFileByChars(casespartdbPath));
 	}
 	
-	public static JSONObject getSpaOrRtdbInfos(String httpUrl) {
+	public static JSONObject reqUrl(String httpUrl) {
 		JSONObject infos = new JSONObject();
 		URL url;
 		try {
@@ -182,7 +182,6 @@ public class CaseMonitorThread implements Runnable{
 		return infos;
 	}
 	
-	
 	private synchronized void sendCaseStatus(String reqType, String body){
 		JSONObject tmp = JSONObject.fromObject(messagePre);
 		String reqMessage = ParamUtil.getJsonObject(tmp, reqType, "", body).toString();
@@ -191,7 +190,8 @@ public class CaseMonitorThread implements Runnable{
 		while(isSendCaseStatus){
 			try {
 				//Avoid status repeats
-				if(null!=caseStatusInfo && DigestUtils.md5Hex(reqMessage).equals(DigestUtils.md5Hex(caseStatusInfo.toString()))&&!caseStatusInfo.getJSONObject(Constants.BODY).getJSONObject(Constants.TASKSTATUS).getString(Constants.STATUS).equals(Constants.IDLE)){ 
+//old				if(null!=caseStatusInfo && DigestUtils.md5Hex(reqMessage).equals(DigestUtils.md5Hex(caseStatusInfo.toString()))&&!caseStatusInfo.getJSONObject(Constants.BODY).getJSONObject(Constants.TASKSTATUS).getString(Constants.STATUS).equals(Constants.IDLE)){ 
+				if(null!=caseStatusInfo && DigestUtils.md5Hex(reqMessage).equals(DigestUtils.md5Hex(caseStatusInfo.toString())) && !isOrNotRecon){ 
 					logger.info("case list last status "+caseStatusInfo.toString());
 					return;
 				}
@@ -317,9 +317,15 @@ public class CaseMonitorThread implements Runnable{
 						
 						String url = JSONObject.fromObject(Fiforeader.readFileByChars(pythonPath+File.separator+"DailyRunVar.json")).getString("group_node_url");
 						JSONObject spaAndRtdb = JSONObject.fromObject(Fiforeader.readFileByChars(casespartdbPath));
-						JSONArray rtdbsJsonArray = getSpaOrRtdbInfos(url+"/info/rtdbs").getJSONArray("data");
-						JSONArray spasArray = getSpaOrRtdbInfos(url+"/info/spas").getJSONArray("data");
-						if(rtdbsJsonArray.size()!=0){
+						JSONArray rtdbsJsonArray = reqUrl(url+"/info/rtdbs").getJSONArray("data");
+						JSONArray spasArray = reqUrl(url+"/info/spas").getJSONArray("data");
+
+//						JSONObject buildinfo = reqUrl(url+"/info/build");
+//						if(buildinfo.size()!=0){
+//							Fifowriter.writerFile(casespartdbPath, buildinfo.toString());
+//						}
+						
+						if(rtdbsJsonArray.size()!=0 && spasArray.size()!=0){
 							spaAndRtdb.getJSONObject(Constants.LAB).put(Constants.SERVERRTDB, rtdbsJsonArray);
 							spaAndRtdb.getJSONObject(Constants.LAB).put(Constants.SERVERSPA, spasArray);
 						}
@@ -546,6 +552,9 @@ public class CaseMonitorThread implements Runnable{
 				for (int i = 0; i < retryTimes; i++) {
 					try {
 						CommonsUtil.connector(socketInfo, Constants.CASE_EMBEDDED_MESSAGEREQ);
+						if(!PythonUtil.getProcess(pythonPath+File.separator+pythonName)){
+							sendCaseStatus(Constants.CASEREQTYPUP, Constants.CASESTATUSIDLE);                  //In order to solve the problem that the state of spa and RTDB will not be sent again when the state is updated at the time of idle
+						}
 						if(!PythonUtil.getProcess(pythonPath+File.separator+pythonName)&&isOrNotRecon){
 							sendCaseStatus(Constants.CASEREQTYPUP, Constants.CASESTATUSIDLE);
 							isOrNotRecon=false;
@@ -574,20 +583,6 @@ public class CaseMonitorThread implements Runnable{
 	}
 	
 	public static void main(String[] args) {
-		String cur_release = "";
-			String epay = "EPAY173";
-			if(epay.contains(Constants.EPAY)){
-	            String EPAY_version = epay.replace("EPAY", "");
-	            if (EPAY_version.startsWith("28")){
-	            	EPAY_version.substring(EPAY_version.length()-2, EPAY_version.length()-1);
-	                cur_release = "28."+((int)EPAY_version.substring(EPAY_version.length()-1, EPAY_version.length()).toUpperCase().toCharArray()[0] - (int)'A' + 10);
-	            }else if (EPAY_version.startsWith("29")){
-	                cur_release = "28."+((int)EPAY_version.substring(EPAY_version.length()-1, EPAY_version.length()).toUpperCase().toCharArray()[0] - (int)'A' + 10);
-	            }else{
-	                cur_release = EPAY_version.substring(EPAY_version.length()-3, EPAY_version.length()-2)+EPAY_version.substring(EPAY_version.length()-2, EPAY_version.length()-1)+"."+EPAY_version.substring(EPAY_version.length()-1, EPAY_version.length());
-	            }
-			}
-			
-			System.out.println(cur_release);
+		System.out.println(reqUrl("http://135.242.17.200:8000/jenkins-api/api/info/build"));
 	}
 }
