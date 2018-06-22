@@ -84,6 +84,7 @@ public class Constants {
 	public static final String CASE_CONF_CASEREADTIMEOUT="case.socket.read_period_timeout";
 	public static final String CASE_CONF_CASESTATUSPATH="case.client.casestatus.path";
 	public static final String CASE_CONF_CASESPARTDBPATH="case.client.casesspartdb.path";
+	public static final String CASE_CONF_BUILDINFOPATH="case.client.buildinfo.path";
 	public static final String CASE_CONF_CASEHANDLENUM="case.client.handle.num";
 	public static final String CASE_CONF_MONITORPY="case.client.monitorpy_time_break";
 

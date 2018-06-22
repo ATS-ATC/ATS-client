@@ -4,9 +4,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
- * 1、自动增长，定值置零（1000）
  * @author wanghaiqi
- *单例
  */
 public class AutoIncrement {
 	
