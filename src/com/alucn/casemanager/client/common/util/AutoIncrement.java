@@ -17,7 +17,7 @@ public class AutoIncrement {
 	}
 
 	public static AtomicInteger getAutoIncrement(){
-		if(increment==null||increment.intValue()==1000){
+		if(null == increment || increment.intValue() == 1000){
 			increment.set(0);
 		}
 		increment.addAndGet(1);
