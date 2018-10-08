@@ -13,6 +13,8 @@ public class Constants {
 	public static final String RESPONSE = "response";
 	public static final String BODY = "body";
 	public static final String LAB = "lab";
+	public static final String CURRENTSTATUS = "Succeed";
+	public static final String SERVERNAME = "serverName";
 	public static final String IP = "serverIp";
 	public static final String SERVERRELEASE = "serverRelease";
 	public static final String SERVERSPA = "serverSPA";

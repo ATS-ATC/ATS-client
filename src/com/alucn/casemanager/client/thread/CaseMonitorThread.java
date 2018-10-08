@@ -322,39 +322,43 @@ public class CaseMonitorThread implements Runnable{
 				try {
 					if(refreshCaseConfCounter==10){
 						refreshCaseConfCounter = 0;
-						
 						String url = JSONObject.fromObject(Fiforeader.readFileByChars(pythonPath+File.separator+"DailyRunVar.json")).getString("group_node_url");
 						JSONObject spaAndRtdb = JSONObject.fromObject(Fiforeader.readFileByChars(casespartdbPath));
-						JSONArray rtdbsJsonArray = reqUrl(url+"/info/rtdbs").getJSONArray("data");
-						JSONArray spasArray = reqUrl(url+"/info/spas").getJSONArray("data");
+						
+						String currentStatus = reqUrl("http://135.251.249.124:9333/spadm/default/labapi/dailylab/"+spaAndRtdb.getJSONObject(Constants.LAB).getString(Constants.SERVERNAME)+".json").getJSONArray("content").getJSONObject(0).getString("status");
+						if(Constants.CURRENTSTATUS.equals(currentStatus)){
+							JSONArray rtdbsJsonArray = reqUrl(url+"/info/rtdbs").getJSONArray("data");
+							JSONArray spasArray = reqUrl(url+"/info/spas").getJSONArray("data");
 
-						JSONObject buildinfo = reqUrl(url+"/info/build");
-						if(buildinfo.size()!=0){
-							Fifowriter.writerFile(buildinfoPath, buildinfo.toString());
-						}
-						
-						if(rtdbsJsonArray.size()!=0 && spasArray.size()!=0){
-							spaAndRtdb.getJSONObject(Constants.LAB).put(Constants.SERVERRTDB, rtdbsJsonArray);
-							spaAndRtdb.getJSONObject(Constants.LAB).put(Constants.SERVERSPA, spasArray);
-						}
-						String cur_release = "";
-						for(int i=0; i<spasArray.size(); i++){
-							String epay = spasArray.getString(i);
-							if(epay.contains(Constants.EPAY)){
-					            String EPAY_version = epay.replace(Constants.EPAY, "");
-					            if (EPAY_version.startsWith("28")){
-					            	EPAY_version.substring(EPAY_version.length()-2, EPAY_version.length()-1);
-					                cur_release = "28."+((int)EPAY_version.substring(EPAY_version.length()-1, EPAY_version.length()).toUpperCase().toCharArray()[0] - (int)'A' + 10);
-					            }else if (EPAY_version.startsWith("29")){
-					                cur_release = "28."+((int)EPAY_version.substring(EPAY_version.length()-1, EPAY_version.length()).toUpperCase().toCharArray()[0] - (int)'A' + 10);
-					            }else{
-					                cur_release = EPAY_version.substring(EPAY_version.length()-3, EPAY_version.length()-2)+EPAY_version.substring(EPAY_version.length()-2, EPAY_version.length()-1)+"."+EPAY_version.substring(EPAY_version.length()-1, EPAY_version.length());
-					            }
+							JSONObject buildinfo = reqUrl(url+"/info/build");
+							if(buildinfo.size()!=0){
+								Fifowriter.writerFile(buildinfoPath, buildinfo.toString());
 							}
+							
+							if(rtdbsJsonArray.size()!=0 && spasArray.size()!=0){
+								spaAndRtdb.getJSONObject(Constants.LAB).put(Constants.SERVERRTDB, rtdbsJsonArray);
+								spaAndRtdb.getJSONObject(Constants.LAB).put(Constants.SERVERSPA, spasArray);
+							}
+							String cur_release = "";
+							for(int i=0; i<spasArray.size(); i++){
+								String epay = spasArray.getString(i);
+								if(epay.contains(Constants.EPAY)){
+						            String EPAY_version = epay.replace(Constants.EPAY, "");
+						            if (EPAY_version.startsWith("28")){
+						            	EPAY_version.substring(EPAY_version.length()-2, EPAY_version.length()-1);
+						                cur_release = "28."+((int)EPAY_version.substring(EPAY_version.length()-1, EPAY_version.length()).toUpperCase().toCharArray()[0] - (int)'A' + 10);
+						            }else if (EPAY_version.startsWith("29")){
+						                cur_release = "28."+((int)EPAY_version.substring(EPAY_version.length()-1, EPAY_version.length()).toUpperCase().toCharArray()[0] - (int)'A' + 10);
+						            }else{
+						                cur_release = EPAY_version.substring(EPAY_version.length()-3, EPAY_version.length()-2)+EPAY_version.substring(EPAY_version.length()-2, EPAY_version.length()-1)+"."+EPAY_version.substring(EPAY_version.length()-1, EPAY_version.length());
+						            }
+								}
+							}
+							spaAndRtdb.getJSONObject(Constants.LAB).put(Constants.SERVERRELEASE, "SP"+cur_release);
+							Fifowriter.writerFile(casespartdbPath, spaAndRtdb.toString());
+						}else{
+							logger.warn("current lab status is "+currentStatus);
 						}
-						spaAndRtdb.getJSONObject(Constants.LAB).put(Constants.SERVERRELEASE, "SP"+cur_release);
-						Fifowriter.writerFile(casespartdbPath, spaAndRtdb.toString());
-						
 						initParams();
 						if("".equals(messagePre.getJSONObject(Constants.BODY).getJSONObject(Constants.LAB).get(Constants.IP))){
 							logger.error("[please build spa and rtdb]");
