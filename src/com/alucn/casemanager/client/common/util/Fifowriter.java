@@ -35,13 +35,12 @@ public class Fifowriter {
 		try {
 			outputStream = new FileOutputStream(filePath+File.separator+fileName);
 			osw = new OutputStreamWriter(outputStream,Constants.CHARACTER_SET_ENCODING_UTF8);
-			if(size == 0 || "".equals(caseList))
-			{
-			    osw.write("");
+			if("".equals(caseList) || writeSize.size()==0){
+				osw.write("");
 			}
 			else
 			{
-			    osw.write(writeSize.toString());
+				osw.write(writeSize.toString());
 			}
 			osw.flush();
 		} finally{

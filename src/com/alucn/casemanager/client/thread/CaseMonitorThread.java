@@ -68,6 +68,7 @@ public class CaseMonitorThread implements Runnable{
 	private String caseListName = "";
 	private String caseStatusPath = "";
 	private String casespartdbPath = "";
+	private String buildinfoPath = "";
 	private String caseHandleNum = "";
 	
 	@SuppressWarnings({ "static-access" })
@@ -78,15 +79,7 @@ public class CaseMonitorThread implements Runnable{
 			//To determine whether the first call, or case information on the hot load thread and the health check thread all stop running
 			if(hotCache==null&&healthChecker==null&&pythonMonitor==null){
 				logger.info("[Initializing health detection and case information for hot load thread opening]");
-				//Start refresh server list thread
-				hotCache = new Thread(new HotCache());
-				isStopHotCache = true;
-				hotCache.start();
-				if(hotCache.isAlive()){
-					logger.info("[Hot load thread has been started]");
-				}else{
-					throw new CaseInitListenerException("[Failed to start the hot load thread]");
-				}
+				
 				//Start health detection thread
 				healthChecker = new Thread(new HealthChecker());
 				isStopHeathyCheck = true;
@@ -96,6 +89,19 @@ public class CaseMonitorThread implements Runnable{
 				}else{
 					throw new CaseInitListenerException("[Failed to start the health test thread]");
 				}
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {}
+				//Start refresh server list thread
+				hotCache = new Thread(new HotCache());
+				isStopHotCache = true;
+				hotCache.start();
+				if(hotCache.isAlive()){
+					logger.info("[Hot load thread has been started]");
+				}else{
+					throw new CaseInitListenerException("[Failed to start the hot load thread]");
+				}
+				
 				//Start python monitor thread
 				pythonMonitor = new Thread(new PythonMonitor());
 				isStopPythonMonitor = true;
@@ -148,6 +154,7 @@ public class CaseMonitorThread implements Runnable{
 		caseStatusPath = Configuration.getConfiguration().getCaseStatusPath();
 		casespartdbPath = Configuration.getConfiguration().getSpaAndrtdb();
 		caseHandleNum = Configuration.getConfiguration().getCaseHandleNum();
+		buildinfoPath = Configuration.getConfiguration().getBuildinfo();
 		messagePre = ParamUtil.getJsonObject(Constants.CASESTATUSPRE, "", "", Fiforeader.readFileByChars(casespartdbPath));
 	}
 	
@@ -293,13 +300,14 @@ public class CaseMonitorThread implements Runnable{
 	 */
 	private SocketInfo pollingServers(){
 		List<SocketInfo> healthyServers = CaseCache.getHealthyServers();
-		int autoIncrement = AutoIncrement.getAutoIncrement().get();
+		//int autoIncrement = AutoIncrement.getAutoIncrement().get();
 		logger.debug("Number of health servers" + healthyServers.size());
-		logger.debug("autosign：" + autoIncrement);
+		//logger.debug("autosign：" + autoIncrement);
 		
-        int balanceIndex = Math.abs(autoIncrement % healthyServers.size());
-        logger.debug("Load balance sign：" + balanceIndex);
-		return healthyServers.get(balanceIndex);
+        //int balanceIndex = Math.abs(autoIncrement % healthyServers.size());
+        //logger.debug("Load balance sign：" + balanceIndex);
+		//return healthyServers.get(balanceIndex);
+		return healthyServers.get(0);
 	}
 	
 	//Cache loading
@@ -320,10 +328,10 @@ public class CaseMonitorThread implements Runnable{
 						JSONArray rtdbsJsonArray = reqUrl(url+"/info/rtdbs").getJSONArray("data");
 						JSONArray spasArray = reqUrl(url+"/info/spas").getJSONArray("data");
 
-//						JSONObject buildinfo = reqUrl(url+"/info/build");
-//						if(buildinfo.size()!=0){
-//							Fifowriter.writerFile(casespartdbPath, buildinfo.toString());
-//						}
+						JSONObject buildinfo = reqUrl(url+"/info/build");
+						if(buildinfo.size()!=0){
+							Fifowriter.writerFile(buildinfoPath, buildinfo.toString());
+						}
 						
 						if(rtdbsJsonArray.size()!=0 && spasArray.size()!=0){
 							spaAndRtdb.getJSONObject(Constants.LAB).put(Constants.SERVERRTDB, rtdbsJsonArray);
@@ -383,9 +391,11 @@ public class CaseMonitorThread implements Runnable{
 							new Thread(new ExecCommand(serverSendInfo)).start();
 						}else if(serverSendInfo.startsWith(Constants.AVAILABLECASE)){//caselist
 							JSONObject caseListAndUUID = JSONObject.fromObject(serverSendInfo.replace(Constants.AVAILABLECASE+":", ""));
-							if(!cacheCaseListUUID.equals(caseListAndUUID.get("uuid").toString())){
-								new Thread(new ExecPython(caseListAndUUID)).start();
-								cacheCaseListUUID=caseListAndUUID.get("uuid").toString();
+							if(!PythonUtil.getProcess(pythonPath+File.separator+pythonName)){
+								if(!cacheCaseListUUID.equals(caseListAndUUID.get("uuid").toString())){
+									new Thread(new ExecPython(caseListAndUUID)).start();
+									cacheCaseListUUID=caseListAndUUID.get("uuid").toString();
+								}
 							}
 						}else if(serverSendInfo.equals(Constants.UPDATE)){
 							isSendCaseStatus = false;
@@ -582,7 +592,8 @@ public class CaseMonitorThread implements Runnable{
 		}
 	}
 	
-	public static void main(String[] args) {
-		System.out.println(reqUrl("http://135.242.17.200:8000/jenkins-api/api/info/build"));
+	public static void main(String[] args) throws IOException {
+		Fifowriter.writerFile("", "D:/status_progress.log","", 0);
+		//System.out.println(reqUrl("http://135.242.17.200:8000/jenkins-api/api/info/build"));
 	}
 }

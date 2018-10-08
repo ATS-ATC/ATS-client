@@ -46,7 +46,7 @@ public class Configuration {
 	private String pythonName;
 	
 	private String pythonPath;
-	
+	//case
 	private String caseListPath;
 	
 	private String caseStatusPath;
@@ -56,6 +56,8 @@ public class Configuration {
 	private String casesocketreadtimeout;
 	
 	private String spaAndrtdb;
+	
+	private String buildinfo;
 	
 	private String caseHandleNum;
 	
@@ -124,6 +126,7 @@ public class Configuration {
 			config.setCaseStatusPath(properties.get(Constants.CASE_CONF_CASESTATUSPATH).toString());
 			config.setSpaAndrtdb(properties.get(Constants.CASE_CONF_CASESPARTDBPATH).toString());;
 			config.setCaseHandleNum(properties.get(Constants.CASE_CONF_CASEHANDLENUM).toString());
+			config.setBuildinfo(properties.get(Constants.CASE_CONF_BUILDINFOPATH).toString());
 			config.setMonitorPyBreak(Long.parseLong(properties.get(Constants.CASE_CONF_MONITORPY).toString()));
 			config = checkConfiguration(config);
 			conf = config;
@@ -337,6 +340,14 @@ public class Configuration {
 
 	public void setMonitorPyBreak(Long monitorPyBreak) {
 		this.monitorPyBreak = monitorPyBreak;
+	}
+
+	public String getBuildinfo() {
+		return buildinfo;
+	}
+
+	public void setBuildinfo(String buildinfo) {
+		this.buildinfo = buildinfo;
 	}
 	
 }
